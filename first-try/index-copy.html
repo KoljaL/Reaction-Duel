@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Game - Reaction Test</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+            }
+            #reactionButton {
+                display: none;
+                padding: 20px;
+                font-size: 24px;
+                background-color: #4caf50;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            #waitingMessage {
+                font-size: 18px;
+            }
+            #resultMessage {
+                font-size: 18px;
+            }
+            #startButton {
+                padding: 20px;
+                font-size: 24px;
+                background-color: #008cba;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            #joinForm {
+                display: block;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Reaction Game</h1>
+
+        <!-- Game Creation Form -->
+        <div id="createGameForm">
+            <h2>Create a New Game</h2>
+            <input type="text" id="player1Name" placeholder="Player 1 Name" required />
+            <button onclick="createGame()">Create Game</button>
+        </div>
+
+        <!-- Join Game Form (Player 2) -->
+        <div id="joinGameForm" style="display: none">
+            <h2>Game ID: <span id="gameID"></span></h2>
+            <p><strong>Player 1:</strong> <span id="player1NameDisplay"></span></p>
+            <input type="text" id="player2Name" placeholder="Player 2 Name" required />
+            <button onclick="joinGame()">Join Game</button>
+        </div>
+
+        <!-- Game UI -->
+        <div id="gameUI" style="display: none">
+            <h2>Game ID: <span id="currentGameID"></span></h2>
+            <p><strong>Player 1:</strong> <span id="player1"></span> vs. <strong>Player 2:</strong> <span id="player2"></span></p>
+            <div id="waitingMessage">Waiting for Player 1 to start the round...</div>
+            <button id="startButton">Start Round</button>
+            <button id="reactionButton">Click Now!</button>
+            <div id="resultMessage"></div>
+        </div>
+
+        <script>
+            let round = 0;
+            let playerTurn = 1; // 1 for Player 1, 2 for Player 2
+            let roundStartTime = 0;
+            let reactionTimes = [];
+            let gameID = null;
+
+            // Create a new game
+            function createGame() {
+                const player1Name = document.getElementById('player1Name').value;
+                if (player1Name) {
+                    fetch('api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'create_game', player1: player1Name }),
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            gameID = data.game_id;
+                            document.getElementById('gameID').innerText = gameID;
+                            document.getElementById('createGameForm').style.display = 'none';
+                            document.getElementById('joinGameForm').style.display = 'block';
+                        });
+                }
+            }
+
+            // Join an existing game
+            function joinGame() {
+                const player2Name = document.getElementById('player2Name').value;
+                if (player2Name && gameID) {
+                    fetch('api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'join_game', game_id: gameID, player2: player2Name }),
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.success) {
+                                document.getElementById('joinGameForm').style.display = 'none';
+                                document.getElementById('gameUI').style.display = 'block';
+                                fetchGameState();
+                            }
+                        });
+                }
+            }
+
+            // Fetch game state
+            function fetchGameState() {
+                fetch(`api.php?game_id=${gameID}`)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        document.getElementById('currentGameID').innerText = data.game_id;
+                        document.getElementById('player1').innerText = data.player1;
+                        document.getElementById('player2').innerText = data.player2;
+                    });
+            }
+
+            // Start round (Player 1)
+            document.getElementById('startButton')?.addEventListener('click', function () {
+                document.getElementById('waitingMessage').innerText = 'Wait for the button to appear...';
+                this.style.display = 'none';
+                playerTurn = 1;
+                startRound();
+            });
+
+            // Reaction time button click
+            document.getElementById('reactionButton')?.addEventListener('click', function () {
+                const reactionTime = Date.now() - roundStartTime;
+                reactionTimes.push({ player: playerTurn, time: reactionTime });
+
+                document.getElementById('resultMessage').innerText = `Player ${playerTurn}'s reaction time: ${reactionTime} ms`;
+                playerTurn = playerTurn === 1 ? 2 : 1;
+                document.getElementById('reactionButton').style.display = 'none';
+                setTimeout(() => {
+                    if (playerTurn === 1) {
+                        startRound();
+                    } else {
+                        document.getElementById('waitingMessage').innerText = 'Waiting for Player 1 to start the next round...';
+                    }
+                }, 1000);
+            });
+
+            function startRound() {
+                setTimeout(() => {
+                    roundStartTime = Date.now();
+                    document.getElementById('reactionButton').style.display = 'block';
+                    document.getElementById('waitingMessage').innerText = 'Click the button as fast as you can!';
+                }, Math.random() * 3000 + 1000); // Random delay between 1 and 4 seconds
+            }
+        </script>
+    </body>
+</html>
