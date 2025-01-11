@@ -4,7 +4,7 @@ type RDStoreT = ReaperStore<{
 	game_id: string;
 	player1: string;
 	player2: string;
-	gameState: 'start' | 'created' | 'invited';
+	gameState: 'start' | 'created' | 'invited' | 'playing' | 'finished';
 	gameTimes: { [key: number]: [string, string] };
 }>;
 
