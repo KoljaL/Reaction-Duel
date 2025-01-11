@@ -1,3 +1,23 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
-ets
+<script lang="ts">
+	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
+
+	let user1 = '';
+
+	const createGame = async () => {
+		const response = await api({
+			method: 'POST',
+			body: JSON.stringify({ action: 'getGames' }),
+			params: { user: 'test' }
+		});
+		console.log(response);
+	};
+</script>
+
+<h1>Page</h1>
+
+<label for="user1">
+	User 1:
+	<input type="text" id="user1" bind:value={user1} />
+	<button onclick={createGame}>Send</button>
+</label>
